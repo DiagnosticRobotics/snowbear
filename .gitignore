@@ -1,0 +1,4 @@
+/dist/**
+.pytest_cache
+.idea
+*.db
