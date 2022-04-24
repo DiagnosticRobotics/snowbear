@@ -53,12 +53,12 @@ DatasetQuery is wrapper over pypika, adding to_df() and preview() function
 
 ```python
 import snowbear as sb
-result_df = sb. DatasetQuery().from_("test_table").select("*").to_df(connection)
-top_5 = sb. DatasetQuery().from_("test_table").select("*").preview(connection)
+result_df = sb.SnowflakeDatasetQuery().from_("test_table").select("*").to_df(connection)
+top_5 = sb. SnowflakeDatasetQuery().from_("test_table").select("*").head(connection)
 ```
 
 ## How to contribute
 
-Have any feedback? Wish to implement an extenstion or new capability? Want to help us make argo better and easier to use?
+Have any feedback? Wish to implement an extenstion or new capability? 
 Every contribution to _snowbear_ is greatly appreciated.
 
