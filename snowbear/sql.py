@@ -12,6 +12,7 @@ from snowflake.connector.pandas_tools import write_pandas
 from snowflake.sqlalchemy.snowdialect import SnowflakeDialect
 from sqlalchemy.engine import Engine, Connection
 
+DEFAULT_UPLOAD_CHUNK_SIZE = 200_000
 
 def pd_writer(
     table: pandas.io.sql.SQLTable,
@@ -23,6 +24,7 @@ def pd_writer(
     sf_connection = conn.connection.connection
     df = pandas.DataFrame(data_iter, columns=keys)
     write_pandas(
+        chunk_size=DEFAULT_UPLOAD_CHUNK_SIZE,
         conn=sf_connection,
         df=df,
         # Note: Our sqlalchemy connector creates tables case insensitively
