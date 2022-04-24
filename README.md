@@ -17,15 +17,15 @@ read_sql_query is a drop in replacement to pandas read_sql_query, it is implemen
 
 ```python
 import snowbear as sb
-df = sb.read_sql_query("SELECT * FROM test_table", engine=engine)
+df = sb.read_sql_query("SELECT * FROM test_table", con=engine)
 ```
 
 ### to_sql
-read_sql_query is a drop in replacement to pandas read_sql_query, it is implemented to fetch upload large datasets using snowflake's pd_writer, and staging mechanism
+to_sql is a drop in replacement to pandas to_sql, it is implemented to upload large datasets using snowflake's pd_writer and staging mechanism
 
 ```python
 import snowbear as sb
-sb.to_sql(df, "SELECT * FROM test_table", engine=engine)
+sb.to_sql(df, "test_table", con=connection)
 ```
 
 ### with temporary_dataframe_table
