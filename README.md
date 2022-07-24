@@ -62,3 +62,5 @@ top_5 = sb. SnowflakeDatasetQuery().from_("test_table").select("*").head(connect
 Have any feedback? Wish to implement an extenstion or new capability? 
 Every contribution to _snowbear_ is greatly appreciated.
 
+## Acknowledgements
+terms and expression capabilities in sql datasets were copied and modified from Pypika in accordance to Apache License, Version 2.0
