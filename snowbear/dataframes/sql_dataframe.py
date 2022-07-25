@@ -16,6 +16,7 @@ from snowbear.dataframes.transformations.select_transformation import SelectTran
 from snowbear.dataframes.transformations.orderby_transformation import OrderbyTransformation
 from snowbear.dataframes.transformations.where_transformation import WhereTransformation
 from snowbear.dataframes.transformations.raw_sql_transformation import RawSqlTransformation
+from snowbear.dataframes.utils import format_quotes
 
 
 class JoinExpression:
@@ -172,6 +173,20 @@ class SqlDataFrame:
         sql = self.to_sql()
         return read_sql_query(sql, con=self.session.connection, chunksize=chunksize)
 
+    def to_table(self,  name: str, schema: str= None) -> "Dataset":
+        dataset = Dataset(name=name, schema=schema, session=self.session)
+        sql = self.to_sql()
+        create_sql = f"CREATE TABLE {dataset.get_alias_name()} AS  {sql} "
+        self.session.connection.execute(create_sql)
+        return dataset
+
+    def insert_into_table(self,  name: str, schema: str= None) -> "Dataset":
+        dataset = Dataset(name=name, schema=schema, session=self.session)
+        sql = self.to_sql()
+        create_sql = f"INSERT INTO {dataset.get_alias_name()} {sql} "
+        self.session.connection.execute(create_sql)
+        return dataset
+
     def alias(self, alias: str) -> SqlDataFrame:
         self._alias = alias
         return self
@@ -189,3 +204,21 @@ class SqlDataFrame:
 
     def get_transformation(self):
         return self._transformation
+
+
+class Dataset(SqlDataFrame):
+
+    def to_sql(self) -> str:
+        return f"SELECT * FROM {self.get_alias_name()}"
+
+    def get_alias_name(self):
+        table_sql = self._name
+
+        if self._schema is not None:
+            table_sql = "{schema}.{table}".format(schema=self._schema, table=table_sql)
+        return table_sql
+
+    def __init__(self, name: str, schema: str = None, session: "Session" = None):
+        super().__init__(session)
+        self._name = name
+        self._schema = schema

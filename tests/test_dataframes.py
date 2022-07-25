@@ -58,6 +58,41 @@ def test_simple_query(database):
         connection.execute("DROP TABLE test_table")
 
 
+@pytest.mark.parametrize("database", database_urls, ids=database_names)
+def test_to_table(database):
+    try:
+        connection = create_engine(database)
+        session = Session(connection)
+
+        df = pd.DataFrame(np.array([[1, 2.3, 'A'], [4, 5.7, 'B'], [7, 8.0, 'B']]),
+                          columns=['a', 'b', 'c'])
+
+        test_table = session.create_dataset(df, "test_table")
+        table2 = test_table.to_table("test_table_2")
+        pd.testing.assert_frame_equal(df, table2.to_df() , check_dtype=False)
+
+    finally:
+        connection.execute("DROP TABLE test_table")
+        connection.execute("DROP TABLE test_table_2")
+
+@pytest.mark.parametrize("database", database_urls, ids=database_names)
+def test_inser_into_table(database):
+    try:
+        connection = create_engine(database)
+        session = Session(connection)
+
+        df = pd.DataFrame(np.array([[1, 2.3, 'A'], [4, 5.7, 'B'], [7, 8.0, 'B']]),
+                          columns=['a', 'b', 'c'])
+
+        test_table = session.create_dataset(df, "test_table")
+        table2 = test_table.to_table("test_table_2")
+        test_table.insert_into_table("test_table_2")
+
+        assert len(table2.to_df())==len(df)*2
+
+    finally:
+        connection.execute("DROP TABLE test_table")
+        connection.execute("DROP TABLE test_table_2")
 
 @pytest.mark.parametrize("database", database_urls, ids=database_names)
 def test_chunked_query(database):
@@ -73,6 +108,5 @@ def test_chunked_query(database):
 
         for chunk in test_table.to_df(chunksize=1000):
             assert len(chunk) == 3
-
     finally:
         connection.execute("DROP TABLE test_table")
