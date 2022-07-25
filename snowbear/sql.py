@@ -1,3 +1,4 @@
+import logging
 import uuid
 from contextlib import contextmanager
 from typing import Iterable, Union
@@ -9,9 +10,9 @@ from pandas.core.generic import bool_t
 from pandas.io.sql import get_schema
 from snowflake.connector.options import pandas
 from snowflake.connector.pandas_tools import write_pandas
-from snowflake.sqlalchemy.snowdialect import SnowflakeDialect
 from sqlalchemy.engine import Engine, Connection
 
+logger = logging.getLogger(__name__)
 DEFAULT_UPLOAD_CHUNK_SIZE = 200_000
 
 
@@ -24,6 +25,7 @@ def pd_writer(
 ) -> None:
     sf_connection = conn.connection.connection
     df = pandas.DataFrame(data_iter, columns=keys)
+    logger.debug(f'pd_writer: using the chunk_size {DEFAULT_UPLOAD_CHUNK_SIZE}')
     write_pandas(
         chunk_size=DEFAULT_UPLOAD_CHUNK_SIZE,
         conn=sf_connection,
@@ -41,7 +43,7 @@ def _get_dialect(con):
     elif isinstance(con, Connection):
         return con.dialect
     else:
-        raise "Cannot detect dialect from object"
+        raise ValueError("Cannot detect dialect from object")
 
 
 def _get_batches(cursor, chunksize):
@@ -68,7 +70,11 @@ def _get_batches(cursor, chunksize):
 def read_sql_query(
     sql: str, con: Engine, index_col=None, coerce_float=True, chunksize=None
 ) -> pd.DataFrame:
-    if isinstance(con.dialect, SnowflakeDialect):
+    db_dialect = _get_dialect(con)
+    logger.info(f"starting read_sql_query(). the db dialect is '{db_dialect}'")
+    logger.debug(f"query sql: '{sql}'")
+    if db_dialect == "snowflake":
+        logger.debug("utilizing snowflake's connector read optimizations")
         with con.connect() as connection:
             cursor = connection.connection.cursor()
             cursor.execute(sql)
@@ -79,13 +85,16 @@ def read_sql_query(
                 df.rename(columns=str.lower, inplace=True)
                 return df
     else:
-        return pd.read_sql_query(
+        logger.debug('using the default pandas read_sql_query() implementation')
+        result_df = pd.read_sql_query(
             sql=sql,
             con=con,
             index_col=index_col,
             coerce_float=coerce_float,
             chunksize=chunksize,
         )
+    logger.debug('read_sql_query() completed')
+    return result_df
 
 
 def to_sql(
@@ -100,8 +109,12 @@ def to_sql(
     dtype=None,
     method=None,
 ) -> None:
-    if _get_dialect(con) == "snowflake":
-        return df.to_sql(
+    db_dialect = _get_dialect(con)
+    logger.info(f"starting to_sql(). writing a dataframe of shape {df.shape} to the db table '{name}'. "
+                f"the db dialect is '{db_dialect}'")
+    if db_dialect == "snowflake":
+        logger.debug("utilizing snowflake's connector write optimizations")
+        result = df.to_sql(
             name,
             con=con,
             schema=schema,
@@ -113,7 +126,8 @@ def to_sql(
             method=pd_writer,
         )
     else:
-        return df.to_sql(
+        logger.debug('using the default pandas to_sql() implementation')
+        result = df.to_sql(
             name,
             con=con,
             schema=schema,
@@ -124,6 +138,8 @@ def to_sql(
             dtype=dtype,
             method=method,
         )
+    logger.debug('to_sql() completed')
+    return result
 
 
 def temporary_ids_table(ids: Iterable, connection: Connection, column="ids") -> str:
@@ -143,5 +159,9 @@ def temporary_dataframe_table(dataframe: DataFrame, connection: Connection) -> s
 
     connection.execute(create_statement)
     to_sql(table_frame, temp_table_name, connection, if_exists="append", index=False)
-    yield temp_table_name
-    connection.execute(f"DROP TABLE {temp_table_name}")
+    logger.debug(f"the temporary table '{temp_table_name}' was created")
+    try:
+        yield temp_table_name
+    finally:
+        connection.execute(f"DROP TABLE {temp_table_name}")
+    logger.debug(f"the temporary table '{temp_table_name}' was dropped")

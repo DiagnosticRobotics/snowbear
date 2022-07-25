@@ -5,6 +5,7 @@ def format_quotes(value: Any, quote_char: Optional[str]) -> str:
     return "{quote}{value}{quote}".format(value=value, quote=quote_char or "")
 
 
+
 def builder(func: Callable) -> Callable:
     """
     Decorator for wrapper "builder" functions.  These are functions on the Query class or other classes used for
