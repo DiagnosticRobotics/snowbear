@@ -17,7 +17,7 @@ database_names = ["sqlite", "snowflake"]
 
 
 @pytest.mark.parametrize("database", database_urls, ids=database_names)
-def test(database):
+def test_aggregate_query(database):
     try:
         connection = create_engine(database)
         session = Session(connection)
@@ -36,5 +36,43 @@ def test(database):
 
         result_df = aggs.to_df()
         assert result_df['b_sum'][1] == 13.7
+    finally:
+        connection.execute("DROP TABLE test_table")
+
+
+@pytest.mark.parametrize("database", database_urls, ids=database_names)
+def test_simple_query(database):
+    try:
+        connection = create_engine(database)
+        session = Session(connection)
+
+        df = pd.DataFrame(np.array([[1, 2.3, 'A'], [4, 5.7, 'B'], [7, 8.0, 'B']]),
+                          columns=['a', 'b', 'c'])
+        to_sql(df, "test_table", con=connection, index=False)
+
+        test_table = session.dataset("test_table")
+
+        pd.testing.assert_frame_equal(df, test_table.to_df(), check_dtype=False)
+
+    finally:
+        connection.execute("DROP TABLE test_table")
+
+
+
+@pytest.mark.parametrize("database", database_urls, ids=database_names)
+def test_chunked_query(database):
+    try:
+        connection = create_engine(database)
+        session = Session(connection)
+
+        df = pd.DataFrame(np.array([[1, 2.3, 'A'], [4, 5.7, 'B'], [7, 8.0, 'B']]),
+                          columns=['a', 'b', 'c'])
+        to_sql(df, "test_table", con=connection, index=False)
+
+        test_table = session.dataset("test_table")
+
+        for chunk in test_table.to_df(chunksize=1000):
+            assert len(chunk) == 3
+
     finally:
         connection.execute("DROP TABLE test_table")

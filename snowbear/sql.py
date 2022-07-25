@@ -14,6 +14,7 @@ from sqlalchemy.engine import Engine, Connection
 
 DEFAULT_UPLOAD_CHUNK_SIZE = 200_000
 
+
 def pd_writer(
     table: pandas.io.sql.SQLTable,
     conn: Union[sqlalchemy.engine.Engine, sqlalchemy.engine.Connection],
@@ -43,6 +44,27 @@ def _get_dialect(con):
         raise "Cannot detect dialect from object"
 
 
+def _get_batches(cursor, chunksize):
+    """
+    snowflake fetch_pandas_batches return batch sizes of it's own choice,
+    to conform to the chunksize parameter we split and merge the batches
+    into chunksize
+    """
+    current_batch = None
+    for batch in cursor.fetch_pandas_batches():
+        if current_batch is None:
+            current_batch = batch
+        else:
+            current_batch = pd.concat([current_batch, batch])
+        while len(current_batch) > chunksize:
+            batch_subset = current_batch.iloc[0:chunksize].copy()
+            current_batch = current_batch.iloc[chunksize:]
+            batch_subset.rename(columns=str.lower, inplace=True)
+            yield batch_subset
+    current_batch.rename(columns=str.lower, inplace=True)
+    yield current_batch
+
+
 def read_sql_query(
     sql: str, con: Engine, index_col=None, coerce_float=True, chunksize=None
 ) -> pd.DataFrame:
@@ -50,9 +72,12 @@ def read_sql_query(
         with con.connect() as connection:
             cursor = connection.connection.cursor()
             cursor.execute(sql)
-            df = cursor.fetch_pandas_all()
-            df.rename(columns=str.lower, inplace=True)
-            return df
+            if chunksize:
+                return _get_batches(cursor, chunksize)
+            else:
+                df = cursor.fetch_pandas_all()
+                df.rename(columns=str.lower, inplace=True)
+                return df
     else:
         return pd.read_sql_query(
             sql=sql,

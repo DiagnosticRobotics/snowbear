@@ -168,9 +168,9 @@ class SqlDataFrame:
     def __getitem__(self, name: str) -> Field:
         return Field(name=name, table=self)
 
-    def to_df(self) -> SqlDataFrame:
+    def to_df(self, chunksize: int = None) -> SqlDataFrame:
         sql = self.to_sql()
-        return read_sql_query(sql, con=self.session.connection)
+        return read_sql_query(sql, con=self.session.connection, chunksize=chunksize)
 
     def alias(self, alias: str) -> SqlDataFrame:
         self._alias = alias
