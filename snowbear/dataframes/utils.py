@@ -1,4 +1,9 @@
-from typing import Callable
+from typing import Callable, Any, Optional
+
+
+def format_quotes(value: Any, quote_char: Optional[str]) -> str:
+    return "{quote}{value}{quote}".format(value=value, quote=quote_char or "")
+
 
 
 def builder(func: Callable) -> Callable:

@@ -8,11 +8,19 @@ from sqlalchemy.engine import Connection
 
 from snowbear import temporary_dataframe_table, read_sql_query
 from snowbear.dataframes.sql_dataframe import SqlDataFrame
-
+from snowbear.dataframes.utils import format_quotes
 
 class Dataset(SqlDataFrame):
+
+    def to_sql(self) -> str:
+        return f"SELECT * FROM {self.get_alias_name()}"
+
     def get_alias_name(self):
-        return self._name
+        quote_char = '"'
+        table_sql = format_quotes(self._name, quote_char)
+
+        if self._schema is not None:
+            table_sql = "{schema}.{table}".format(schema=format_quotes(self._schema, quote_char), table=table_sql)
 
     def __init__(self, name: str, schema: str = None, session: Session = None):
         super().__init__(session)
