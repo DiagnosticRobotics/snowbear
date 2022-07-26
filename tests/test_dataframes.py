@@ -115,7 +115,7 @@ def test_chunked_query(database):
         connection.execute("DROP TABLE test_table")
 
 
-def test_x():
+def test_sql_builder():
     session = Session(None)
     d1 = session.dataset("test1")
     d2 = session.dataset("test2")
@@ -125,4 +125,14 @@ def test_x():
         .left_join(d3).on(d1.id == d3.id) \
         .where(d1.code > 33).where(d2.name.isin(["k"])).select(d1=d1.name, d2=d2.id).groupby(d1.name).aggregate(
         x=lambda x: x.cnt)
+    print(res.to_sql())
+
+
+def test_union():
+    session = Session(None)
+    d1 = session.dataset("test1")
+    d2 = session.dataset("test2")
+    d3 = session.dataset("test3")
+    d4 = d1.where(d1.code > 33).where(d2.name.isin(["k"]))
+    res = session.union([d1,d2,d3,d4])
     print(res.to_sql())

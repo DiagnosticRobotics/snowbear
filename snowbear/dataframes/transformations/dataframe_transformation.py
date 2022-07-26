@@ -22,6 +22,8 @@ class DataframeTransformation(SQLTransformation):
     def get_dependencies(self):
         dep_list = []
         dep_list.extend(extend_transformations(self._source))
+        for dep in self._deps:
+            dep_list.extend(extend_transformations(dep))
         return dep_list
 
     def __init__(self, source, selectors=None, joins=None, filters=None, groupby: List[Field] = None,
