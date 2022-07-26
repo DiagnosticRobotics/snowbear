@@ -8,6 +8,7 @@ class JoinTransformation(SQLTransformation):
     def get_dependencies(self):
         dep_list = []
         dep_list.extend(extend_transformations(self._source))
+        dep_list.extend(extend_transformations(self._other))
         return dep_list
 
     def __init__(

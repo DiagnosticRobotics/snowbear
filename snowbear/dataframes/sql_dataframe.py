@@ -3,20 +3,23 @@ from __future__ import annotations
 import random
 import string
 from textwrap import indent
-from typing import Callable, Union
+from typing import Callable, Union, List
 
 from snowbear import read_sql_query
 from snowbear.dataframes.terms import Term, Field
-from snowbear.dataframes.transformations.transformations import SQLTransformation
-from snowbear.dataframes.transformations.join_using_transformation import JoinUsingTransformation
-from snowbear.dataframes.transformations.set_transformation import SetTransformation
-from snowbear.dataframes.transformations.groupby_transformation import GroupbyTransformation
-from snowbear.dataframes.transformations.join_transformation import JoinTransformation
-from snowbear.dataframes.transformations.select_transformation import SelectTransformation
-from snowbear.dataframes.transformations.orderby_transformation import OrderbyTransformation
-from snowbear.dataframes.transformations.where_transformation import WhereTransformation
+from snowbear.dataframes.transformations.dataframe_transformation import DataframeTransformation
 from snowbear.dataframes.transformations.raw_sql_transformation import RawSqlTransformation
-from snowbear.dataframes.utils import format_quotes
+from snowbear.dataframes.transformations.set_transformation import SetTransformation
+from snowbear.dataframes.transformations.transformations import SQLTransformation
+
+
+def get_or_create_transformation(source: SqlDataFrame) -> DataframeTransformation:
+    source_transformation = source.get_transformation()
+    if isinstance(source_transformation, DataframeTransformation)\
+            and not source_transformation.is_sealed():
+        return source_transformation.copy()
+    else:
+        return DataframeTransformation(source)
 
 
 class JoinExpression:
@@ -27,15 +30,14 @@ class JoinExpression:
         self._other = other
 
     def on(self, *args: Term) -> SqlDataFrame:
-        transformation = JoinTransformation(
-            self._source, self._other, self._join_type, args
-        )
+        transformation = get_or_create_transformation(self._source)
+        transformation.add_join(self._other, self._join_type, "ON", args)
         return SqlDataFrame(transformation=transformation, session=self._selectable.session)
 
     def using(self, field: Field) -> SqlDataFrame:
-        transformation = JoinUsingTransformation(
-            self._source, self._other, self._join_type, field
-        )
+        transformation = get_or_create_transformation(self._source)
+        transformation.add_join(self._other, self._join_type, "ON", field)
+
         return SqlDataFrame(transformation=transformation, session=self._selectable.session)
 
 
@@ -64,7 +66,7 @@ def parse_array_from_context(v, selectable):
 
 
 class GroupbyExpression:
-    def __init__(self, selectable: SqlDataFrame, by: list[Field]):
+    def __init__(self, selectable: SqlDataFrame, by: List[Field]):
         self._selectable = selectable
         self._by = by
 
@@ -74,10 +76,9 @@ class GroupbyExpression:
         items = [
             parse_from_context(k, v, self._selectable) for (k, v) in kwargs.items()
         ]
-        transformation = GroupbyTransformation(
-            self._selectable, by=self._by, aggs=items
-        )
-        return SqlDataFrame(transformation=transformation,session=self._selectable.session)
+        transformation = get_or_create_transformation(self._selectable)
+        transformation.add_groupby(by=self._by, aggs=items)
+        return SqlDataFrame(transformation=transformation, session=self._selectable.session)
 
 
 class SqlDataFrame:
@@ -111,15 +112,13 @@ class SqlDataFrame:
                 int, float, str, bool, Term, Field, Callable[[SqlDataFrame], Term]
             ],
     ) -> SqlDataFrame:
-        transformation = SelectTransformation(
-            self, [parse_from_context(k, v, self) for (k, v) in kwargs.items()]
-        )
+        transformation = get_or_create_transformation(self)
+        transformation.add_select([parse_from_context(k, v, self) for (k, v) in kwargs.items()])
         return SqlDataFrame(transformation=transformation, session=self.session)
 
     def where(self, *args: Union[Term, Callable[[SqlDataFrame], Term]]) -> SqlDataFrame:
-        transformation = WhereTransformation(
-            self, [parse_array_from_context(v, self) for v in args]
-        )
+        transformation = get_or_create_transformation(self)
+        transformation.add_filter(filters=[parse_array_from_context(v, self) for v in args])
         return SqlDataFrame(transformation=transformation, session=self.session)
 
     def groupby(
@@ -158,9 +157,8 @@ class SqlDataFrame:
         return SqlDataFrame(transformation=transformation, session=self.session)
 
     def order_by(self, *args: Field, direction="ASC") -> SqlDataFrame:
-        transformation = OrderbyTransformation(
-            self, [parse_array_from_context(v, self) for v in args], direction=direction
-        )
+        transformation = get_or_create_transformation(self)
+        transformation.add_orderby([([parse_array_from_context(v, self) for v in args], direction)])
         return SqlDataFrame(transformation=transformation, session=self.session)
 
     def __getattr__(self, name: str) -> Field:
@@ -173,14 +171,14 @@ class SqlDataFrame:
         sql = self.to_sql()
         return read_sql_query(sql, con=self.session.connection, chunksize=chunksize)
 
-    def to_table(self,  name: str, schema: str= None) -> "Dataset":
+    def to_table(self, name: str, schema: str = None) -> "Dataset":
         dataset = Dataset(name=name, schema=schema, session=self.session)
         sql = self.to_sql()
         create_sql = f"CREATE TABLE {dataset.get_alias_name()} AS  {sql} "
         self.session.connection.execute(create_sql)
         return dataset
 
-    def insert_into_table(self,  name: str, schema: str= None) -> "Dataset":
+    def insert_into_table(self, name: str, schema: str = None) -> "Dataset":
         dataset = Dataset(name=name, schema=schema, session=self.session)
         sql = self.to_sql()
         create_sql = f"INSERT INTO {dataset.get_alias_name()} {sql} "
@@ -197,7 +195,7 @@ class SqlDataFrame:
         cte = ",\n\n".join(
             [f"{dep[0]} AS (\n{indent(dep[1].get_sql(), tab)}\n)" for dep in deps]
         )
-        if len(deps)==0:
+        if len(deps) == 0:
             return self._transformation.get_sql()
 
         return f"WITH\n\n{cte}\n\n--final\n{self._transformation.get_sql()}"
