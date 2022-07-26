@@ -137,23 +137,23 @@ class SqlDataFrame:
         return SqlDataFrame(transformation=transformation, session=self.session)
 
     def union(self, other: SqlDataFrame) -> SqlDataFrame:
-        transformation = SetTransformation(self, other, "UNION")
+        transformation = SetTransformation([self, other], "UNION")
         return SqlDataFrame(transformation=transformation)
 
     def union_all(self, other: SqlDataFrame) -> SqlDataFrame:
-        transformation = SetTransformation(self, other, "UNION ALL")
+        transformation = SetTransformation([self, other], "UNION ALL")
         return SqlDataFrame(transformation=transformation, session=self.session)
 
     def intersect(self, other: SqlDataFrame) -> SqlDataFrame:
-        transformation = SetTransformation(self, other, "INTERSECT")
+        transformation = SetTransformation([self, other], "INTERSECT")
         return SqlDataFrame(transformation=transformation, session=self.session)
 
     def except_of(self, other: SqlDataFrame) -> SqlDataFrame:
-        transformation = SetTransformation(self, other, "EXCEPT")
+        transformation = SetTransformation([self, other], "EXCEPT")
         return SqlDataFrame(transformation=transformation, session=self.session)
 
     def minus(self, other: SqlDataFrame) -> SqlDataFrame:
-        transformation = SetTransformation(self, other, "MINUS")
+        transformation = SetTransformation([self, other], "MINUS")
         return SqlDataFrame(transformation=transformation, session=self.session)
 
     def order_by(self, *args: Field, direction="ASC") -> SqlDataFrame:
