@@ -1,3 +1,5 @@
+from typing import List
+
 from snowbear.dataframes.terms import Term
 from snowbear.dataframes.transformations.transformations import SQLTransformation, extend_transformations
 
@@ -8,7 +10,7 @@ class WhereTransformation(SQLTransformation):
         dep_list.extend(extend_transformations(self._source))
         return dep_list
 
-    def __init__(self, source, filters: list[Term]) -> None:
+    def __init__(self, source, filters: List[Term]) -> None:
         self._source = source
         self._filters = filters
 

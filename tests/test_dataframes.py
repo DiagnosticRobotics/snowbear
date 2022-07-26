@@ -9,6 +9,7 @@ from snowbear import to_sql
 from snowbear.dataframes import functions
 
 from snowbear.dataframes import Session
+from snowbear.dataframes.transformations.dataframe_transformation import DataframeTransformation, JoinDefiniton
 
 fallback_url = "sqlite:///C:\\sqlitedbs\\database.db"
 snowflake_url = os.environ.get("SNFLK_TEST_URL")
@@ -69,11 +70,12 @@ def test_to_table(database):
 
         test_table = session.create_dataset(df, "test_table")
         table2 = test_table.to_table("test_table_2")
-        pd.testing.assert_frame_equal(df, table2.to_df() , check_dtype=False)
+        pd.testing.assert_frame_equal(df, table2.to_df(), check_dtype=False)
 
     finally:
         connection.execute("DROP TABLE test_table")
         connection.execute("DROP TABLE test_table_2")
+
 
 @pytest.mark.parametrize("database", database_urls, ids=database_names)
 def test_inser_into_table(database):
@@ -88,11 +90,12 @@ def test_inser_into_table(database):
         table2 = test_table.to_table("test_table_2")
         test_table.insert_into_table("test_table_2")
 
-        assert len(table2.to_df())==len(df)*2
+        assert len(table2.to_df()) == len(df) * 2
 
     finally:
         connection.execute("DROP TABLE test_table")
         connection.execute("DROP TABLE test_table_2")
+
 
 @pytest.mark.parametrize("database", database_urls, ids=database_names)
 def test_chunked_query(database):
@@ -110,3 +113,16 @@ def test_chunked_query(database):
             assert len(chunk) == 3
     finally:
         connection.execute("DROP TABLE test_table")
+
+
+def test_x():
+    session = Session(None)
+    d1 = session.dataset("test1")
+    d2 = session.dataset("test2")
+    d3 = session.dataset("test3")
+    res = d1 \
+        .left_join(d2).on(d1.id == d2.id) .groupby(d1.column).aggregate()\
+        .left_join(d3).on(d1.id == d3.id) \
+        .where(d1.code > 33).where(d2.name.isin(["k"])).select(d1=d1.name, d2=d2.id).groupby(d1.name).aggregate(
+        x=lambda x: x.cnt)
+    print(res.to_sql())

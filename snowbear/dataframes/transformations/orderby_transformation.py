@@ -1,3 +1,5 @@
+from typing import List
+
 from snowbear.dataframes.terms import Term
 from snowbear.dataframes.transformations.transformations import SQLTransformation, extend_transformations
 
@@ -8,7 +10,7 @@ class OrderbyTransformation(SQLTransformation):
         dep_list.extend(extend_transformations(self._source))
         return dep_list
 
-    def __init__(self, source, sorters: list[Term], direction: str) -> None:
+    def __init__(self, source, sorters: List[Term], direction: str) -> None:
         self._source = source
         self._sorters = sorters
         self._direction = direction

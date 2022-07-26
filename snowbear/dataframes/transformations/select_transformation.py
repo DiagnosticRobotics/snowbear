@@ -1,4 +1,5 @@
 from textwrap import indent
+from typing import List
 
 from snowbear.dataframes.terms import Term
 from snowbear.dataframes.transformations.transformations import SQLTransformation, extend_transformations, TAB
@@ -10,7 +11,7 @@ class SelectTransformation(SQLTransformation):
         dep_list.extend(extend_transformations(self._source))
         return dep_list
 
-    def __init__(self, source, selectors: list[Term]) -> None:
+    def __init__(self, source, selectors: List[Term]) -> None:
         self._source = source
         self._selectors = selectors
 

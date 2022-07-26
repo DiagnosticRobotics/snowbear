@@ -1,10 +1,11 @@
 from abc import abstractmethod
+from typing import Dict
 
 from snowbear.dataframes.transformations.transformations import extend_transformations
 
 
 class RawSqlTransformation:
-    def __init__(self, sql, source, additional_sources: dict[str, "Selectable"]) -> None:
+    def __init__(self, sql, source, additional_sources: Dict[str, "Selectable"]) -> None:
         self._source = source
         self._additional_sources = additional_sources
         self._sql = sql
