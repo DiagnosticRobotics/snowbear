@@ -1,6 +1,6 @@
 [tool.poetry]
 name = "snowbear"
-version = "0.2.2"
+version = "0.2.3"
 description = ""
 authors = ["Omri Fima <omrif@diagnosticrobotics.com>"]
 
