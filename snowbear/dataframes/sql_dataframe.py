@@ -15,7 +15,7 @@ from snowbear.dataframes.transformations.transformations import SQLTransformatio
 
 def get_or_create_transformation(source: SqlDataFrame) -> DataframeTransformation:
     source_transformation = source.get_transformation()
-    if isinstance(source_transformation, DataframeTransformation)\
+    if isinstance(source_transformation, DataframeTransformation) \
             and not source_transformation.is_sealed():
         return source_transformation.copy()
     else:
@@ -36,7 +36,7 @@ class JoinExpression:
 
     def using(self, field: Field) -> SqlDataFrame:
         transformation = get_or_create_transformation(self._source)
-        transformation.add_join(self._other, self._join_type, "ON", field)
+        transformation.add_join(self._other, self._join_type, "USING", [field])
 
         return SqlDataFrame(transformation=transformation, session=self._selectable.session)
 
@@ -81,6 +81,12 @@ class GroupbyExpression:
         return SqlDataFrame(transformation=transformation, session=self._selectable.session)
 
 
+def dedup_by_key(deps):
+    seen = set()
+    return [(a, b) for a, b in deps
+            if not (a in seen or seen.add(a))]
+
+
 class SqlDataFrame:
     def __init__(self, session: "Session", transformation: SQLTransformation = None):
         letters = string.ascii_uppercase
@@ -114,6 +120,28 @@ class SqlDataFrame:
     ) -> SqlDataFrame:
         transformation = get_or_create_transformation(self)
         transformation.add_select([parse_from_context(k, v, self) for (k, v) in kwargs.items()])
+        return SqlDataFrame(transformation=transformation, session=self.session)
+
+    def select_star(
+            self,
+            except_columns: [Term, Field, Callable[[SqlDataFrame], Term]] = None,
+            prefix: str = '',
+            suffix: str = '',
+            **kwargs: Union[
+                int, float, str, bool, Term, Field, Callable[[SqlDataFrame], Term]
+            ],
+    ) -> SqlDataFrame:
+        """
+        generates a comma-separated list of all fields that exist in the from relation, excluding any fields listed in the except argument, and deduping columns with the same name.
+        :param except_columns: list of oclums not to be included in select statement
+        :param prefix: prefix string to add to selected columns
+        :param suffix: suffix string to add to selected columns
+        :param kwargs: additional terms to include in select statement
+        :return:
+        """
+        transformation = get_or_create_transformation(self)
+        transformation.add_select_star(except_columns, prefix, suffix,
+                                       [parse_from_context(k, v, self) for (k, v) in kwargs.items()])
         return SqlDataFrame(transformation=transformation, session=self.session)
 
     def where(self, *args: Union[Term, Callable[[SqlDataFrame], Term]]) -> SqlDataFrame:
@@ -191,6 +219,7 @@ class SqlDataFrame:
 
     def to_sql(self) -> str:
         deps = self._transformation.get_dependencies()
+        deps = dedup_by_key(deps)
         tab = "\t"
         cte = ",\n\n".join(
             [f"{dep[0]} AS (\n{indent(dep[1].get_sql(), tab)}\n)" for dep in deps]

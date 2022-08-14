@@ -56,10 +56,10 @@ class DataframeTransformation(SQLTransformation):
             terms = [x.get_sql() for x in join.join_terms]
             on_term = 'AND\n'.join(terms)
             return f"{join.join_type} {join.source.get_alias_name()} ON\n{indent(on_term, TAB)}"
-        if join.join_terms_type == "ON":
+        if join.join_terms_type == "USING":
             terms = [x.get_sql() for x in join.join_terms]
-            on_term = ','.join(terms)
-            return f"{join.join_type} {join.source.get_alias_name()} USING\n({indent(on_term, TAB)})"
+            using_term = ','.join(terms)
+            return f"{join.join_type} {join.source.get_alias_name()} USING\n({indent(using_term, TAB)})"
 
         raise "join type must be ON or USING"
 
