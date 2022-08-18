@@ -17,4 +17,4 @@ class SetTransformation(SQLTransformation):
         self._set_type = set_type
 
     def get_sql(self):
-        return f"\n{self._set_type}\n".join([source.get_alias_name() for source in self._source])
+        return f"\n{self._set_type}\n".join([source.get_alias_name for source in self._source])

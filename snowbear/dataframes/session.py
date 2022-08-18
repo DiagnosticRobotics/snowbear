@@ -23,14 +23,6 @@ class Session:
     def sql(self, query: str) -> DataFrame:
         return DataFrame(self, RawSqlTransformation(query))
 
-    @staticmethod
-    def union(datasets: List[DataFrame]) -> DataFrame:
-        it = iter(datasets)
-        accumulate = next(it)
-        for element in it:
-            accumulate = accumulate.union(element)
-        return accumulate
-
     def union(self, dataframes: List[DataFrame]) -> DataFrame:
         transformation = SetTransformation(dataframes, "UNION")
         return DataFrame(transformation=transformation, session=self)
