@@ -23,6 +23,8 @@ __author__ = "Timothy Heys"
 __email__ = "theys@kayak.com"
 
 
+
+
 NodeT = TypeVar("NodeT", bound="Node")
 
 
@@ -428,7 +430,7 @@ class Field(Criterion):
 
         # Need to add namespace if the table has an alias
         if self.table and (with_namespace or self.table.alias):
-            table_name = self.table.get_table_name()
+            table_name = self.table.get_table_name
             field_sql = "{namespace}.{name}".format(
                 namespace=format_quotes(table_name, quote_char),
                 name=field_sql,
@@ -1433,3 +1435,6 @@ class Pow(Function):
 class Mod(Function):
     def __init__(self, term: Term, modulus: float, alias: Optional[str] = None) -> None:
         super().__init__("MOD", term, modulus, alias=alias)
+
+def col(name:str) -> Field:
+    return Field(name)
