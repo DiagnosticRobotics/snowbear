@@ -47,5 +47,3 @@ def test_temporary_list_table_available_for_query(database):
         assert (list(df2['ids']) == [1, 2, 3, 4])
     with pytest.raises(Exception):
         sb.read_sql_query(f"select * from {x}", con=engine)
-
-

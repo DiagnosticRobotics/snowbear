@@ -185,23 +185,23 @@ class DataFrame:
         return DataFrame(transformation=transformation, session=self.session)
 
     def union(self, other: DataFrame) -> DataFrame:
-        transformation = SetTransformation(self, other, "UNION")
+        transformation = SetTransformation([self, other], "UNION")
         return DataFrame(transformation=transformation, session=self.session)
 
     def union_all(self, other: DataFrame) -> DataFrame:
-        transformation = SetTransformation(self, other, "UNION ALL")
+        transformation = SetTransformation([self, other], "UNION ALL")
         return DataFrame(transformation=transformation, session=self.session)
 
     def intersect(self, other: DataFrame) -> DataFrame:
-        transformation = SetTransformation(self, other, "INTERSECT")
+        transformation = SetTransformation([self, other], "INTERSECT")
         return DataFrame(transformation=transformation, session=self.session)
 
     def except_of(self, other: DataFrame) -> DataFrame:
-        transformation = SetTransformation(self, other, "EXCEPT")
+        transformation = SetTransformation([self, other], "EXCEPT")
         return DataFrame(transformation=transformation, session=self.session)
 
     def minus(self, other: DataFrame) -> DataFrame:
-        transformation = SetTransformation(self, other, "MINUS")
+        transformation = SetTransformation([self, other], "MINUS")
         return DataFrame(transformation=transformation, session=self.session)
 
     def order_by(self, *args: Field, direction="ASC") -> DataFrame:
