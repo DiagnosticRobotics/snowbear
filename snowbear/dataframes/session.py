@@ -10,7 +10,6 @@ from sqlalchemy.engine import Connection
 from snowbear import temporary_dataframe_table, read_sql_query, to_sql
 from snowbear.dataframes.sql_dataframe import Dataset, DataFrame
 from snowbear.dataframes.transformations.raw_sql_transformation import RawSqlTransformation
-from snowbear.dataframes.sql_dataframe import Dataset, SqlDataFrame
 from snowbear.dataframes.transformations.set_transformation import SetTransformation
 
 
