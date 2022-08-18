@@ -31,13 +31,13 @@ class Session:
             accumulate = accumulate.union(element)
         return accumulate
 
-    def union(self, dataframes: List[SqlDataFrame]) -> DataFrame:
+    def union(self, dataframes: List[DataFrame]) -> DataFrame:
         transformation = SetTransformation(dataframes, "UNION")
-        return SqlDataFrame(transformation=transformation, session=self)
+        return DataFrame(transformation=transformation, session=self)
 
-    def union_all(self, dataframes: List[SqlDataFrame]) -> DataFrame:
+    def union_all(self, dataframes: List[DataFrame]) -> DataFrame:
         transformation = SetTransformation(dataframes, "UNION ALL")
-        return SqlDataFrame(transformation=transformation, session=self)
+        return DataFrame(transformation=transformation, session=self)
 
     @contextmanager
     def create_temp_dataset(self, dataframe: pandas.DataFrame) -> Dataset:
