@@ -15,9 +15,10 @@ from snowbear.sql import read_sql_query, temporary_dataframe_table, to_sql
 
 
 class Session:
-    def __init__(self, connection: Connection):
+
+    def __init__(self, connection: Connection, dialect: str):
+        self.dialect = dialect
         self.connection = connection
-        self.dialect = "snowflake"
         self.QUOTE_CHAR = None
         self.ALIAS_QUOTE_CHAR = '"'
         self.QUERY_ALIAS_QUOTE_CHAR = ""

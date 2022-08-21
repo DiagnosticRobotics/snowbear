@@ -3,9 +3,7 @@ import pandas as pd
 import pytest
 from sqlalchemy import create_engine
 
-from snowbear import to_sql
-from snowbear.dataframes import Session, col, functions
-from snowbear.dataframes.terms import ValueWrapper
+from snowbear.dataframes import Session, col, functions, SqliteSession
 
 fallback_url = "sqlite://"
 database_urls = [fallback_url]
@@ -15,7 +13,7 @@ database_names = ["sqlite"]
 @pytest.mark.parametrize("database", database_urls, ids=database_names)
 def test_simple_query(database):
     connection = create_engine(database)
-    session = Session(connection)
+    session = SqliteSession(connection)
 
     df = pd.DataFrame(
         np.array([[1, 2.3, "A"], [4, 5.7, "B"], [7, 8.0, "B"]]), columns=["a", "b", "c"]
@@ -28,7 +26,7 @@ def test_simple_query(database):
 @pytest.mark.parametrize("database", database_urls, ids=database_names)
 def test_filter_query(database):
     connection = create_engine(database)
-    session = Session(connection)
+    session = SqliteSession(connection)
 
     source = pd.DataFrame(
         np.array([[1, 2.3, "A"], [4, 5.7, "B"], [7, 8.0, "B"]]), columns=["a", "b", "c"]
@@ -44,7 +42,7 @@ def test_filter_query(database):
 @pytest.mark.parametrize("database", database_urls, ids=database_names)
 def test_limit_query(database):
     connection = create_engine(database)
-    session = Session(connection)
+    session = SqliteSession(connection)
 
     source = pd.DataFrame(
         np.array([[1, 2.3, "A"], [4, 5.7, "B"], [7, 8.0, "B"]]), columns=["a", "b", "c"]
@@ -58,7 +56,7 @@ def test_limit_query(database):
 @pytest.mark.parametrize("database", database_urls, ids=database_names)
 def test_partials_selectors_query(database):
     connection = create_engine(database)
-    session = Session(connection)
+    session = SqliteSession(connection)
 
     source = pd.DataFrame(
         np.array([[1, 2.3, "A"], [4, 5.7, "B"], [7, 8.0, "B"]]), columns=["a", "b", "c"]
@@ -75,7 +73,7 @@ def test_partials_selectors_query(database):
 @pytest.mark.parametrize("database", database_urls, ids=database_names)
 def test_groupby_query(database):
     connection = create_engine(database)
-    session = Session(connection)
+    session = SqliteSession(connection)
 
     source = pd.DataFrame(
         np.array([[1, 2.3, "A"], [4, 5.7, "B"], [7, 8.0, "B"]]), columns=["a", "b", "c"]
