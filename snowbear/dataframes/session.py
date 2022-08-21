@@ -14,8 +14,19 @@ from snowbear.dataframes.transformations.set_transformation import SetTransforma
 
 
 class Session:
+
     def __init__(self, connection: Connection):
         self.connection = connection
+        self.dialect = "snowflake"
+        self.QUOTE_CHAR = None
+        self.ALIAS_QUOTE_CHAR = '"'
+        self.QUERY_ALIAS_QUOTE_CHAR = ''
+
+    def get_kwargs_defaults(self) -> None:
+        kwargs = {}
+        kwargs.setdefault("quote_char", self.QUOTE_CHAR)
+        kwargs.setdefault("dialect", self.dialect)
+        return kwargs
 
     def dataset(self, name: str, schema: str = None) -> Dataset:
         return Dataset(name=name, schema=schema, session=self)
@@ -43,7 +54,3 @@ class Session:
 
     def query(self, sql: str) -> pandas.DataFrame:
         return read_sql_query(sql, self.connection)
-
-    def get_columns(self, sql: str) -> List[str]:
-        return read_sql_query(sql, self.connection).columns
-

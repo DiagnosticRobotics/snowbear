@@ -1,5 +1,3 @@
-import os
-
 import numpy as np
 import pandas as pd
 import pytest
@@ -10,6 +8,8 @@ from snowbear.dataframes import functions
 
 from snowbear.dataframes import Session, col
 from snowbear.dataframes.encoders import OneHotEncoder
+from snowbear.dataframes.enums import Order
+from snowbear.dataframes.terms import ValueWrapper
 
 fallback_url = "sqlite://"
 database_urls = [fallback_url]
@@ -113,5 +113,49 @@ def test_union():
     d2 = session.dataset("test2")
     d3 = session.dataset("test3")
     d4 = d1.where(d1.code > 33).where(d2.name.isin(["k"]))
-    res = session.union([d1,d2,d3,d4])
+    res = session.union([d1, d2, d3, d4])
     print(res.to_sql())
+
+
+@pytest.mark.parametrize("database", database_urls, ids=database_names)
+def test_ohe(database):
+    connection = create_engine(database)
+    session = Session(connection)
+
+    df = pd.DataFrame(np.array([[1, 'A', 0], [4, 'B', 0.3], [7, 'B', 0.1], [7, 'A', 0.1], [7, 'B', 0.1]]),
+                      columns=['id', 'category', 'val'])
+    to_sql(df, "test_table", con=connection, index=False)
+
+    test_table = session.dataset("test_table")
+    ohe = OneHotEncoder(input_col='category')
+    df = ohe.fit_transform(test_table)
+    df = df.groupby(df.id).aggregate(category_a=functions.Sum(df.category_a), category_b=functions.Sum(df.category_b))
+    print(df.to_pandas())
+
+
+@pytest.mark.parametrize("database", database_urls, ids=database_names)
+def test_with_and_drop(database):
+    connection = create_engine(database)
+    session = Session(connection)
+
+    df = pd.DataFrame(np.array([[1, 'A', 0], [4, 'B', 0.3], [7, 'B', 0.1], [7, 'A', 0.1], [7, 'B', 0.1]]),
+                      columns=['id', 'category', 'val'])
+    to_sql(df, "test_table", con=connection, index=False)
+
+    test_table = session.dataset("test_table")
+    test_table = test_table.drop_column('val').with_column(mock_val=ValueWrapper(0.0)).rename('category', 'cat_b')
+    print(test_table.to_pandas())
+
+
+@pytest.mark.parametrize("database", database_urls, ids=database_names)
+def test_dedup(database):
+    connection = create_engine(database)
+    session = Session(connection)
+
+    df = pd.DataFrame(np.array([[1, 'A', 0], [4, 'B', 0.3], [7, 'B', 0.1], [7, 'A', 0.1], [7, 'B', 0.1]]),
+                      columns=['id', 'category', 'val'])
+    to_sql(df, "test_table", con=connection, index=False)
+
+    test_table = session.dataset("test_table")
+    test_table = test_table.remove_duplicates(test_table.category, orderby=test_table.val, direction=Order.asc)
+    print(test_table.to_sql())

@@ -7,11 +7,13 @@ from typing import Callable, Union, List, Generator
 import pandas
 
 from snowbear import read_sql_query
+from snowbear.dataframes.enums import Order
 from snowbear.dataframes.terms import Term, Field
 from snowbear.dataframes.transformations.dataframe_transformation import DataframeTransformation
 from snowbear.dataframes.transformations.raw_sql_transformation import RawSqlTransformation
 from snowbear.dataframes.transformations.set_transformation import SetTransformation
 from snowbear.dataframes.transformations.transformations import SQLTransformation
+import snowbear.dataframes.analytics as analytics
 
 
 def get_or_create_transformation(source: DataFrame) -> DataframeTransformation:
@@ -119,6 +121,14 @@ class DataFrame:
     def inner_join(self, other: DataFrame) -> JoinExpression:
         return JoinExpression(self, other, "INNER JOIN")
 
+    def qualify(self, qualify: Term) -> DataFrame:
+        transformation = get_or_create_transformation(self)
+        transformation.add_qualify(qualify)
+        return DataFrame(transformation=transformation, session=self.session)
+
+    def remove_duplicates(self, keys: List[Field], orderby: Field, direction: Order = Order.asc) -> DataFrame:
+        return self.qualify(analytics.RowNumber().over(keys).orderby(orderby, order=direction) == 1)
+
     def limit(
             self,
             limit: int
@@ -137,28 +147,44 @@ class DataFrame:
         transformation.add_select([parse_from_context(k, v, self) for (k, v) in kwargs.items()])
         return DataFrame(transformation=transformation, session=self.session)
 
-    def select_star(
+    def drop_column(
             self,
-            except_columns: [Term, Field, Callable[[DataFrame], Term]] = None,
-            prefix: str = '',
-            suffix: str = '',
-            **kwargs: Union[
-                int, float, str, bool, Term, Field, Callable[[DataFrame], Term]
-            ],
+            *args: List[str]
     ) -> DataFrame:
-        """
-        generates a comma-separated list of all fields that exist in the from relation, excluding any fields listed in the except argument, and deduping columns with the same name.
-        :param except_columns: list of oclums not to be included in select statement
-        :param prefix: prefix string to add to selected columns
-        :param suffix: suffix string to add to selected columns
-        :param kwargs: additional terms to include in select statement
-        :return:
-        """
         transformation = get_or_create_transformation(self)
-        transformation.add_select_star(except_columns, prefix, suffix,
-                                       [parse_from_context(k, v, self) for (k, v) in kwargs.items()])
+        columns = [self[column].as_(column) for column in self.columns() if column not in args]
+        transformation.add_select(columns)
+
         return DataFrame(transformation=transformation, session=self.session)
 
+    def with_column(
+            self,
+            **kwargs: Union[
+                int, float, str, bool, Term, Field, Callable[[DataFrame], Term]
+            ]
+    ) -> DataFrame:
+        transformation = get_or_create_transformation(self)
+        columns = [self[column].as_(column) for column in self.columns()]
+        columns = columns + [parse_from_context(k, v, self) for (k, v) in kwargs.items()]
+        transformation.add_select(columns)
+
+        return DataFrame(transformation=transformation, session=self.session)
+
+    def rename(
+            self,
+            column: Union[str, Field],
+            new_name: str
+    ) -> DataFrame:
+        transformation = get_or_create_transformation(self)
+        if isinstance(column, str):
+            column_to_rename = self[column]
+        else:
+            column_to_rename = column
+        columns = [self[column].as_(column) for column in self.columns() if column != column_to_rename.name]
+        columns = columns + [column_to_rename.as_(new_name)]
+        transformation.add_select(columns)
+
+        return DataFrame(transformation=transformation, session=self.session)
 
     def columns(self) -> List[str]:
         meta_dataframe = self.limit(0).to_pandas()
@@ -204,7 +230,7 @@ class DataFrame:
         transformation = SetTransformation([self, other], "MINUS")
         return DataFrame(transformation=transformation, session=self.session)
 
-    def order_by(self, *args: Field, direction="ASC") -> DataFrame:
+    def order_by(self, *args: Field, direction: Order = Order.asc) -> DataFrame:
         transformation = get_or_create_transformation(self)
         transformation.add_orderby([([parse_array_from_context(v, self) for v in args], direction)])
         return DataFrame(transformation=transformation, session=self.session)
