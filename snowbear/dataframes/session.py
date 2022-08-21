@@ -6,7 +6,7 @@ from typing import List
 import pandas
 from sqlalchemy.engine import Connection
 
-from snowbear import read_sql_query, temporary_dataframe_table, to_sql
+from snowbear.sql import read_sql_query, temporary_dataframe_table, to_sql
 from snowbear.dataframes.sql_dataframe import DataFrame, Dataset
 from snowbear.dataframes.transformations.raw_sql_transformation import (
     RawSqlTransformation,

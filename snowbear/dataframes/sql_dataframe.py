@@ -11,7 +11,7 @@ import pandas
 if typing.TYPE_CHECKING:
     from snowbear.dataframes import Session
 
-from snowbear import read_sql_query
+from snowbear.sql import read_sql_query
 from snowbear.dataframes import analytics
 from snowbear.dataframes.enums import Order
 from snowbear.dataframes.terms import Field, Term

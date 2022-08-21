@@ -11,7 +11,7 @@ from pypika.dialects import (
 from pypika.queries import QueryBuilder, Table
 from sqlalchemy.engine import Connection, Engine
 
-from snowbear import read_sql_query
+from snowbear.sql import read_sql_query
 
 
 class DatasetQueryBuilder(QueryBuilder):
