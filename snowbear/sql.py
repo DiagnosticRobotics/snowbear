@@ -10,7 +10,7 @@ from pandas.core.generic import bool_t
 from pandas.io.sql import get_schema
 from snowflake.connector.options import pandas
 from snowflake.connector.pandas_tools import write_pandas
-from sqlalchemy.engine import Engine, Connection
+from sqlalchemy.engine import Connection, Engine
 
 logger = logging.getLogger(__name__)
 DEFAULT_UPLOAD_CHUNK_SIZE = 200_000
@@ -25,7 +25,7 @@ def pd_writer(
 ) -> None:
     sf_connection = conn.connection.connection
     df = pandas.DataFrame(data_iter, columns=keys)
-    logger.debug(f'pd_writer: using the chunk_size {DEFAULT_UPLOAD_CHUNK_SIZE}')
+    logger.debug(f"pd_writer: using the chunk_size {DEFAULT_UPLOAD_CHUNK_SIZE}")
     write_pandas(
         chunk_size=DEFAULT_UPLOAD_CHUNK_SIZE,
         conn=sf_connection,
@@ -85,7 +85,7 @@ def read_sql_query(
                 df.rename(columns=str.lower, inplace=True)
                 return df
     else:
-        logger.debug('using the default pandas read_sql_query() implementation')
+        logger.debug("using the default pandas read_sql_query() implementation")
         result_df = pd.read_sql_query(
             sql=sql,
             con=con,
@@ -93,7 +93,7 @@ def read_sql_query(
             coerce_float=coerce_float,
             chunksize=chunksize,
         )
-    logger.debug('read_sql_query() completed')
+    logger.debug("read_sql_query() completed")
     return result_df
 
 
@@ -110,8 +110,10 @@ def to_sql(
     method=None,
 ) -> None:
     db_dialect = _get_dialect(con)
-    logger.info(f"starting to_sql(). writing a dataframe of shape {df.shape} to the db table '{name}'. "
-                f"the db dialect is '{db_dialect}'")
+    logger.info(
+        f"starting to_sql(). writing a dataframe of shape {df.shape} to the db table '{name}'. "
+        f"the db dialect is '{db_dialect}'"
+    )
     if db_dialect == "snowflake":
         logger.debug("utilizing snowflake's connector write optimizations")
         result = df.to_sql(
@@ -126,7 +128,7 @@ def to_sql(
             method=pd_writer,
         )
     else:
-        logger.debug('using the default pandas to_sql() implementation')
+        logger.debug("using the default pandas to_sql() implementation")
         result = df.to_sql(
             name,
             con=con,
@@ -138,7 +140,7 @@ def to_sql(
             dtype=dtype,
             method=method,
         )
-    logger.debug('to_sql() completed')
+    logger.debug("to_sql() completed")
     return result
 
 

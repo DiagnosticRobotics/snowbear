@@ -1,7 +1,11 @@
+import typing
 from abc import abstractmethod
 from typing import Dict
 
 from snowbear.dataframes.transformations.transformations import extend_transformations
+
+if typing.TYPE_CHECKING:
+    from snowbear.dataframes import DataFrame
 
 
 class RawSqlTransformation:
@@ -12,7 +16,7 @@ class RawSqlTransformation:
     def get_sql(self):
         query = self._query
         for key, source in self._sources.items():
-            query = query.replace(f'{{{{{key}}}}}', source.get_alias_name())
+            query = query.replace(f"{{{{{key}}}}}", source.get_alias_name)
         return query
 
     @abstractmethod

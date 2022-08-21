@@ -4,7 +4,7 @@ from dataclasses import dataclass
 import numpy as np
 import pandas as pd
 import pytest
-from pypika import Table, Field
+from pypika import Field, Table
 from sqlalchemy import create_engine
 
 import snowbear as sb

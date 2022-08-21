@@ -4,8 +4,8 @@ import numpy as np
 import pandas as pd
 import pytest
 from sqlalchemy import create_engine
-import snowbear as sb
 
+import snowbear as sb
 
 fallback_url = "sqlite:///C:\\sqlitedbs\\database.db"
 snowflake_url = os.environ["SNFLK_TEST_URL"]

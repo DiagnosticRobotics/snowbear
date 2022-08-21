@@ -2,25 +2,35 @@ from __future__ import annotations
 
 import random
 import string
+import typing
 from textwrap import indent
-from typing import Callable, Union, List, Generator
+from typing import Callable, Generator, List, Union
+
 import pandas
-from rasgoql.utils import df
+
+if typing.TYPE_CHECKING:
+    from snowbear.dataframes import Session
 
 from snowbear import read_sql_query
+from snowbear.dataframes import analytics
 from snowbear.dataframes.enums import Order
-from snowbear.dataframes.terms import Term, Field
-from snowbear.dataframes.transformations.dataframe_transformation import DataframeTransformation
-from snowbear.dataframes.transformations.raw_sql_transformation import RawSqlTransformation
+from snowbear.dataframes.terms import Field, Term
+from snowbear.dataframes.transformations.dataframe_transformation import (
+    DataframeTransformation,
+)
+from snowbear.dataframes.transformations.raw_sql_transformation import (
+    RawSqlTransformation,
+)
 from snowbear.dataframes.transformations.set_transformation import SetTransformation
 from snowbear.dataframes.transformations.transformations import SQLTransformation
-import snowbear.dataframes.analytics as analytics
 
 
 def get_or_create_transformation(source: DataFrame) -> DataframeTransformation:
     source_transformation = source.get_transformation()
-    if isinstance(source_transformation, DataframeTransformation) \
-            and not source_transformation.is_sealed():
+    if (
+        isinstance(source_transformation, DataframeTransformation)
+        and not source_transformation.is_sealed()
+    ):
         return source_transformation.copy()
     else:
         return DataframeTransformation(source)
@@ -36,13 +46,17 @@ class JoinExpression:
     def on(self, *args: Term) -> DataFrame:
         transformation = get_or_create_transformation(self._source)
         transformation.add_join(self._other, self._join_type, "ON", args)
-        return DataFrame(transformation=transformation, session=self._selectable.session)
+        return DataFrame(
+            transformation=transformation, session=self._selectable.session
+        )
 
     def using(self, field: Field) -> DataFrame:
         transformation = get_or_create_transformation(self._source)
         transformation.add_join(self._other, self._join_type, "USING", [field])
 
-        return DataFrame(transformation=transformation, session=self._selectable.session)
+        return DataFrame(
+            transformation=transformation, session=self._selectable.session
+        )
 
 
 def parse_from_context(k, v, selectable):
@@ -75,24 +89,24 @@ class GroupbyExpression:
         self._by = by
 
     def aggregate(
-            self, **kwargs: Union[Term, Callable[[DataFrame], Term]]
+        self, **kwargs: Union[Term, Callable[[DataFrame], Term]]
     ) -> DataFrame:
         items = [
             parse_from_context(k, v, self._selectable) for (k, v) in kwargs.items()
         ]
         transformation = get_or_create_transformation(self._selectable)
         transformation.add_groupby(by=self._by, aggs=items)
-        return DataFrame(transformation=transformation, session=self._selectable.session)
+        return DataFrame(
+            transformation=transformation, session=self._selectable.session
+        )
 
 
 def dedup_by_key(deps):
     seen = set()
-    return [(a, b) for a, b in deps
-            if not (a in seen or seen.add(a))]
+    return [(a, b) for a, b in deps if not (a in seen or seen.add(a))]
 
 
 class DataFrame:
-
     def __init__(self, session: "Session", transformation: SQLTransformation = None):
         letters = string.ascii_uppercase
         self.session = session
@@ -100,7 +114,7 @@ class DataFrame:
         self._transformation = transformation
 
     def __repr__(self):
-        return self.__class__.__name__ + '(' + self.get_alias_name + ')'
+        return self.__class__.__name__ + "(" + self.get_alias_name + ")"
 
     @property
     def get_table_name(self) -> str:
@@ -115,7 +129,7 @@ class DataFrame:
 
         Args:
             other (DataFrame): The DataFrame to join with
-            """
+        """
         return JoinExpression(self, other, "JOIN")
 
     def left_join(self, other: DataFrame) -> JoinExpression:
@@ -123,7 +137,7 @@ class DataFrame:
 
         Args:
             other (DataFrame): The DataFrame to join with
-            """
+        """
         return JoinExpression(self, other, "LEFT JOIN")
 
     def right_join(self, other: DataFrame) -> JoinExpression:
@@ -131,7 +145,7 @@ class DataFrame:
 
         Args:
             other (DataFrame): The DataFrame to join with
-            """
+        """
         return JoinExpression(self, other, "RIGHT JOIN")
 
     def inner_join(self, other: DataFrame) -> JoinExpression:
@@ -139,7 +153,7 @@ class DataFrame:
 
         Args:
             other (DataFrame): The DataFrame to join with
-            """
+        """
         return JoinExpression(self, other, "INNER JOIN")
 
     def qualify(self, qualify: Term) -> DataFrame:
@@ -147,12 +161,14 @@ class DataFrame:
 
         Args:
             qualify (Term): The term to run qualify with
-            """
+        """
         transformation = get_or_create_transformation(self)
         transformation.add_qualify(qualify)
         return DataFrame(transformation=transformation, session=self.session)
 
-    def remove_duplicates(self, keys: List[Field], orderby: Field, direction: Order = Order.asc) -> DataFrame:
+    def remove_duplicates(
+        self, keys: List[Field], orderby: Field, direction: Order = Order.asc
+    ) -> DataFrame:
         """Removes duplicate rows from the current DataFrame
 
         Example:
@@ -162,12 +178,11 @@ class DataFrame:
             keys (List[Field]): Keys to detect duplicates by
             orderby (Field): The field to order by
             direction (Order): The direction to order"""
-        return self.qualify(analytics.RowNumber().over(keys).orderby(orderby, order=direction) == 1)
+        return self.qualify(
+            analytics.RowNumber().over(keys).orderby(orderby, order=direction) == 1
+        )
 
-    def limit(
-            self,
-            limit: int
-    ) -> DataFrame:
+    def limit(self, limit: int) -> DataFrame:
         """Performs a limit filter on the current DataFrame
 
         Example:
@@ -181,10 +196,10 @@ class DataFrame:
         return DataFrame(transformation=transformation, session=self.session)
 
     def select(
-            self,
-            **kwargs: Union[
-                int, float, str, bool, Term, Field, Callable[[DataFrame], Term]
-            ],
+        self,
+        **kwargs: Union[
+            int, float, str, bool, Term, Field, Callable[[DataFrame], Term]
+        ],
     ) -> DataFrame:
         """Perform a select transformations on the current DataFrame with the specified Column expressions as output
 
@@ -196,13 +211,12 @@ class DataFrame:
             **kwargs: select terms to
         """
         transformation = get_or_create_transformation(self)
-        transformation.add_select([parse_from_context(k, v, self) for (k, v) in kwargs.items()])
+        transformation.add_select(
+            [parse_from_context(k, v, self) for (k, v) in kwargs.items()]
+        )
         return DataFrame(transformation=transformation, session=self.session)
 
-    def drop_column(
-            self,
-            *args: List[str]
-    ) -> DataFrame:
+    def drop_column(self, *args: List[str]) -> DataFrame:
         """
         Returns a new DataFrame that excludes the columns with the specified names
         from the output.
@@ -212,16 +226,18 @@ class DataFrame:
             >>> df.drop_column('temp_column','temp_column_2')
         """
         transformation = get_or_create_transformation(self)
-        columns = [self[column].as_(column) for column in self.columns() if column not in args]
+        columns = [
+            self[column].as_(column) for column in self.columns() if column not in args
+        ]
         transformation.add_select(columns)
 
         return DataFrame(transformation=transformation, session=self.session)
 
     def with_column(
-            self,
-            **kwargs: Union[
-                int, float, str, bool, Term, Field, Callable[[DataFrame], Term]
-            ]
+        self,
+        **kwargs: Union[
+            int, float, str, bool, Term, Field, Callable[[DataFrame], Term]
+        ],
     ) -> DataFrame:
         """
         Returns a DataFrame with additional columns.
@@ -232,16 +248,14 @@ class DataFrame:
         """
         transformation = get_or_create_transformation(self)
         columns = [self[column].as_(column) for column in self.columns()]
-        columns = columns + [parse_from_context(k, v, self) for (k, v) in kwargs.items()]
+        columns = columns + [
+            parse_from_context(k, v, self) for (k, v) in kwargs.items()
+        ]
         transformation.add_select(columns)
 
         return DataFrame(transformation=transformation, session=self.session)
 
-    def rename(
-            self,
-            column: Union[str, Field],
-            new_name: str
-    ) -> DataFrame:
+    def rename(self, column: Union[str, Field], new_name: str) -> DataFrame:
         """
         Renames a column.
         Args:
@@ -255,7 +269,11 @@ class DataFrame:
             column_to_rename = self[column]
         else:
             column_to_rename = column
-        columns = [self[column].as_(column) for column in self.columns() if column != column_to_rename.name]
+        columns = [
+            self[column].as_(column)
+            for column in self.columns()
+            if column != column_to_rename.name
+        ]
         columns = columns + [column_to_rename.as_(new_name)]
         transformation.add_select(columns)
 
@@ -283,11 +301,13 @@ class DataFrame:
             *args: Expressions to filter by
         """
         transformation = get_or_create_transformation(self)
-        transformation.add_filter(filters=[parse_array_from_context(v, self) for v in args])
+        transformation.add_filter(
+            filters=[parse_array_from_context(v, self) for v in args]
+        )
         return DataFrame(transformation=transformation, session=self.session)
 
     def groupby(
-            self, *args: Union[Field, Callable[[DataFrame], Field]]
+        self, *args: Union[Field, Callable[[DataFrame], Field]]
     ) -> GroupbyExpression:
         """
         Groups rows by the specified columns.
@@ -301,7 +321,7 @@ class DataFrame:
         )
 
     def sql(
-            self, sql: str, **kwargs: Union[Term, Callable[[DataFrame], Term]]
+        self, sql: str, **kwargs: Union[Term, Callable[[DataFrame], Term]]
     ) -> DataFrame:
         """Performs a custom SQL query over a dataframe."""
         transformation = RawSqlTransformation(
@@ -355,7 +375,9 @@ class DataFrame:
 
         """
         transformation = get_or_create_transformation(self)
-        transformation.add_orderby([([parse_array_from_context(v, self) for v in args], direction)])
+        transformation.add_orderby(
+            [([parse_array_from_context(v, self) for v in args], direction)]
+        )
         return DataFrame(transformation=transformation, session=self.session)
 
     def __getattr__(self, name: str) -> Field:
@@ -410,7 +432,6 @@ class DataFrame:
 
 
 class Dataset(DataFrame):
-
     def to_sql(self) -> str:
         return f"SELECT * FROM {self.get_alias_name}"
 

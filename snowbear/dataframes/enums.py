@@ -132,6 +132,7 @@ class SqlTypes:
     VARBINARY = SqlType("VARBINARY")
     LONG_VARBINARY = SqlType("LONG VARBINARY")
 
+
 class Dialects(Enum):
     VERTICA = "vertica"
     CLICKHOUSE = "clickhouse"

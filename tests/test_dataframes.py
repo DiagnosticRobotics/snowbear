@@ -4,9 +4,7 @@ import pytest
 from sqlalchemy import create_engine
 
 from snowbear import to_sql
-from snowbear.dataframes import functions
-
-from snowbear.dataframes import Session, col
+from snowbear.dataframes import Session, col, functions
 from snowbear.dataframes.encoders import OneHotEncoder
 from snowbear.dataframes.enums import Order
 from snowbear.dataframes.terms import ValueWrapper

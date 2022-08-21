@@ -1,5 +1,4 @@
-import json
-from typing import Optional, Union, Dict
+from typing import Dict, Optional, Union
 
 from snowbear.dataframes import DataFrame, col, functions
 from snowbear.dataframes.terms import Case
@@ -7,8 +6,12 @@ from snowbear.dataframes.terms import Case
 
 def _get_categories(df: DataFrame, categories, cat_col):
     if categories == "auto":
-        categories_ = df.groupby(col(cat_col)).aggregate(count=functions.Count(col(cat_col))).to_pandas()[
-            cat_col].to_list()
+        categories_ = (
+            df.groupby(col(cat_col))
+            .aggregate(count=functions.Count(col(cat_col)))
+            .to_pandas()[cat_col]
+            .to_list()
+        )
     else:
         categories_ = categories
     return categories_
@@ -16,11 +19,11 @@ def _get_categories(df: DataFrame, categories, cat_col):
 
 class OneHotEncoder:
     def __init__(
-            self,
-            *,
-            input_col: Optional[str] = None,
-            output_cols: Optional[Union[Dict, str]] = None,
-            categories="auto",
+        self,
+        *,
+        input_col: Optional[str] = None,
+        output_cols: Optional[Union[Dict, str]] = None,
+        categories="auto",
     ):
 
         self.input_col = input_col
@@ -41,7 +44,9 @@ class OneHotEncoder:
                 terms[column] = df[column]
             else:
                 for category in self._fitted_values:
-                    terms[f"{self.input_col}_{category}"] = Case().when(df[self.input_col] == category, 1).else_(0)
+                    terms[f"{self.input_col}_{category}"] = (
+                        Case().when(df[self.input_col] == category, 1).else_(0)
+                    )
 
         return df.select(**terms)
 
