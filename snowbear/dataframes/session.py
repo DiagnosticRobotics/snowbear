@@ -1,17 +1,17 @@
 from __future__ import annotations
 
 from contextlib import contextmanager
-from typing import List
+from typing import Generator, List
 
 import pandas
 from sqlalchemy.engine import Connection
 
-from snowbear.sql import read_sql_query, temporary_dataframe_table, to_sql
 from snowbear.dataframes.sql_dataframe import DataFrame, Dataset
 from snowbear.dataframes.transformations.raw_sql_transformation import (
     RawSqlTransformation,
 )
 from snowbear.dataframes.transformations.set_transformation import SetTransformation
+from snowbear.sql import read_sql_query, temporary_dataframe_table, to_sql
 
 
 class Session:
@@ -43,9 +43,9 @@ class Session:
         return DataFrame(transformation=transformation, session=self)
 
     @contextmanager
-    def create_temp_dataset(self, dataframe: pandas.DataFrame) -> Dataset:
+    def create_temp_dataset(self, dataframe: pandas.DataFrame) -> Generator[Dataset]:
         with temporary_dataframe_table(dataframe, self.connection) as table_name:
-            return Dataset(name=table_name, session=self)
+            yield Dataset(name=table_name, session=self)
 
     def create_dataset(
         self, dataframe: pandas.DataFrame, name: str, schema: str = None

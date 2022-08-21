@@ -11,10 +11,9 @@ import pandas
 if typing.TYPE_CHECKING:
     from snowbear.dataframes import Session
 
-from snowbear.sql import read_sql_query
 from snowbear.dataframes import analytics
 from snowbear.dataframes.enums import Order
-from snowbear.dataframes.terms import Field, Term
+from snowbear.dataframes.terms import Field, Term, ValueWrapper
 from snowbear.dataframes.transformations.dataframe_transformation import (
     DataframeTransformation,
 )
@@ -23,6 +22,7 @@ from snowbear.dataframes.transformations.raw_sql_transformation import (
 )
 from snowbear.dataframes.transformations.set_transformation import SetTransformation
 from snowbear.dataframes.transformations.transformations import SQLTransformation
+from snowbear.sql import read_sql_query
 
 
 def get_or_create_transformation(source: DataFrame) -> DataframeTransformation:
@@ -62,24 +62,30 @@ class JoinExpression:
 def parse_from_context(k, v, selectable):
     if isinstance(v, Callable):
         term = v(selectable)
-    else:
+    elif isinstance(v, Term):
         term = v
+    else:
+        term = ValueWrapper(v)
     return term.as_(k)
 
 
 def parse_from_context_tuple(k, v, selectable):
     if isinstance(v, Callable):
         term = v(selectable)
-    else:
+    elif isinstance(v, Term):
         term = v
+    else:
+        term = ValueWrapper(v)
     return k, term
 
 
 def parse_array_from_context(v, selectable):
     if isinstance(v, Callable):
         term = v(selectable)
-    else:
+    elif isinstance(v, Term):
         term = v
+    else:
+        term = ValueWrapper(v)
     return term
 
 
@@ -320,13 +326,12 @@ class DataFrame:
             self, [parse_array_from_context(v, self) for v in args]
         )
 
-    def sql(
-        self, sql: str, **kwargs: Union[Term, Callable[[DataFrame], Term]]
-    ) -> DataFrame:
+    def sql(self, sql: str, **kwargs: DataFrame) -> DataFrame:
         """Performs a custom SQL query over a dataframe."""
-        transformation = RawSqlTransformation(
-            sql, self, dict([parse_from_context_tuple(k, v, self) for k, v in kwargs])
-        )
+        sources = dict([parse_from_context_tuple(k, v, self) for k, v in kwargs])
+        sources["source"] = self
+
+        transformation = RawSqlTransformation(sql, sources)
         return DataFrame(transformation=transformation, session=self.session)
 
     def union(self, other: DataFrame) -> DataFrame:

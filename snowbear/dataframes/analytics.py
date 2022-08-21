@@ -1,7 +1,7 @@
 """
 Package for SQL analytic functions wrappers
 """
-from pypika.terms import (
+from snowbear.dataframes.terms import (
     AnalyticFunction,
     IgnoreNullsAnalyticFunction,
     WindowFrameAnalyticFunction,

@@ -1,8 +1,8 @@
 lint:
-	flake8 snowbear
+	flake8 snowbear tests
 
 format:
-	black --verbose snowbear
+	black --verbose snowbear tests
 
 isort:
 	isort snowbear tests examples
