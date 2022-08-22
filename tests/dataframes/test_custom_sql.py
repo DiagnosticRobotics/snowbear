@@ -3,10 +3,7 @@ import pandas as pd
 import pytest
 from sqlalchemy import create_engine
 
-from snowbear import to_sql
-from snowbear.dataframes import Session, col, functions, SqliteSession
-from snowbear.dataframes.functions import Cast
-from snowbear.dataframes.terms import ValueWrapper
+from snowbear.dataframes import SqliteSession
 
 fallback_url = "sqlite://"
 database_urls = [fallback_url]

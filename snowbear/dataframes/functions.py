@@ -2,7 +2,8 @@
 Package for SQL functions wrappers
 """
 from snowbear.dataframes.enums import SqlTypes
-from snowbear.dataframes.terms import AggregateFunction, Function, LiteralValue, Star
+from snowbear.dataframes.terms import (AggregateFunction, Function,
+                                       LiteralValue, Star)
 from snowbear.dataframes.utils import builder
 
 __author__ = "Timothy Heys"

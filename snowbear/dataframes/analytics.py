@@ -1,11 +1,9 @@
 """
 Package for SQL analytic functions wrappers
 """
-from snowbear.dataframes.terms import (
-    AnalyticFunction,
-    IgnoreNullsAnalyticFunction,
-    WindowFrameAnalyticFunction,
-)
+from snowbear.dataframes.terms import (AnalyticFunction,
+                                       IgnoreNullsAnalyticFunction,
+                                       WindowFrameAnalyticFunction)
 
 __author__ = "Timothy Heys"
 __email__ = "theys@kayak.com"

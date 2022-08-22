@@ -14,14 +14,14 @@ if typing.TYPE_CHECKING:
 from snowbear.dataframes import analytics
 from snowbear.dataframes.enums import Order
 from snowbear.dataframes.terms import Field, Term, ValueWrapper
-from snowbear.dataframes.transformations.dataframe_transformation import (
-    DataframeTransformation,
-)
-from snowbear.dataframes.transformations.raw_sql_transformation import (
-    RawSqlTransformation,
-)
-from snowbear.dataframes.transformations.set_transformation import SetTransformation
-from snowbear.dataframes.transformations.transformations import SQLTransformation
+from snowbear.dataframes.transformations.dataframe_transformation import \
+    DataframeTransformation
+from snowbear.dataframes.transformations.raw_sql_transformation import \
+    RawSqlTransformation
+from snowbear.dataframes.transformations.set_transformation import \
+    SetTransformation
+from snowbear.dataframes.transformations.transformations import \
+    SQLTransformation
 from snowbear.sql import read_sql_query
 
 
@@ -452,3 +452,4 @@ class Dataset(DataFrame):
         super().__init__(session)
         self._name = name
         self._schema = schema
+

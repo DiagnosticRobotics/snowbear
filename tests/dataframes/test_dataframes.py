@@ -4,15 +4,13 @@ import pytest
 from sqlalchemy import create_engine
 
 from snowbear import to_sql
-from snowbear.dataframes import Session, col, functions, SqliteSession
+from snowbear.dataframes import SqliteSession, functions
 from snowbear.dataframes.encoders import OneHotEncoder
 from snowbear.dataframes.enums import Order
-from snowbear.dataframes.terms import ValueWrapper
 
 fallback_url = "sqlite://"
 database_urls = [fallback_url]
 database_names = ["sqlite"]
-
 
 
 @pytest.mark.parametrize("database", database_urls, ids=database_names)
@@ -91,7 +89,6 @@ def test_ohe(database):
         category_a=functions.Sum(df.category_a), category_b=functions.Sum(df.category_b)
     )
     print(df.to_pandas())
-
 
 
 @pytest.mark.parametrize("database", database_urls, ids=database_names)

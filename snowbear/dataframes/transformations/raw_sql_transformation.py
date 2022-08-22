@@ -2,7 +2,8 @@ import typing
 from abc import abstractmethod
 from typing import Dict
 
-from snowbear.dataframes.transformations.transformations import extend_transformations
+from snowbear.dataframes.transformations.transformations import \
+    extend_transformations
 
 if typing.TYPE_CHECKING:
     from snowbear.dataframes import DataFrame

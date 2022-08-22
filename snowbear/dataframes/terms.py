@@ -4,41 +4,18 @@ import typing
 import uuid
 from datetime import date
 from enum import Enum
-from typing import (
-    Any,
-    Iterable,
-    Iterator,
-    List,
-    Optional,
-    Sequence,
-    Set,
-    Type,
-    TypeVar,
-    Union,
-)
+from typing import (Any, Iterable, Iterator, List, Optional, Sequence, Set,
+                    Type, TypeVar, Union)
 
 if typing.TYPE_CHECKING:
     from snowbear.dataframes import DataFrame, Dataset
 
-from pypika.utils import (
-    CaseException,
-    FunctionException,
-    builder,
-    format_alias_sql,
-    format_quotes,
-    ignore_copy,
-    resolve_is_aggregate,
-)
+from pypika.utils import (CaseException, FunctionException, builder,
+                          format_alias_sql, format_quotes, ignore_copy,
+                          resolve_is_aggregate)
 
-from snowbear.dataframes.enums import (
-    Arithmetic,
-    Boolean,
-    Comparator,
-    Dialects,
-    Equality,
-    Matching,
-    Order,
-)
+from snowbear.dataframes.enums import (Arithmetic, Boolean, Comparator,
+                                       Dialects, Equality, Matching, Order)
 
 __author__ = "Timothy Heys"
 __email__ = "theys@kayak.com"

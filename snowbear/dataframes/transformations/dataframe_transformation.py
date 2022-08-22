@@ -6,10 +6,7 @@ from typing import List, Tuple
 from snowbear.dataframes.enums import Order
 from snowbear.dataframes.terms import Field, Term
 from snowbear.dataframes.transformations.transformations import (
-    TAB,
-    SQLTransformation,
-    extend_transformations,
-)
+    TAB, SQLTransformation, extend_transformations)
 
 if typing.TYPE_CHECKING:
     from snowbear.dataframes import DataFrame

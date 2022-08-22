@@ -2,9 +2,7 @@ import typing
 from typing import List
 
 from snowbear.dataframes.transformations.transformations import (
-    SQLTransformation,
-    extend_transformations,
-)
+    SQLTransformation, extend_transformations)
 
 if typing.TYPE_CHECKING:
     from snowbear.dataframes import DataFrame

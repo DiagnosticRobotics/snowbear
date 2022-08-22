@@ -4,7 +4,6 @@ from snowbear.dataframes import Session
 
 
 class SnowflakeSession(Session):
-
     def __init__(self, connection: Connection):
         super().__init__(connection, "sqlite")
         self.dialect = "snowflake"

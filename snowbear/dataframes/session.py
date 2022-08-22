@@ -7,15 +7,14 @@ import pandas
 from sqlalchemy.engine import Connection
 
 from snowbear.dataframes.sql_dataframe import DataFrame, Dataset
-from snowbear.dataframes.transformations.raw_sql_transformation import (
-    RawSqlTransformation,
-)
-from snowbear.dataframes.transformations.set_transformation import SetTransformation
+from snowbear.dataframes.transformations.raw_sql_transformation import \
+    RawSqlTransformation
+from snowbear.dataframes.transformations.set_transformation import \
+    SetTransformation
 from snowbear.sql import read_sql_query, temporary_dataframe_table, to_sql
 
 
 class Session:
-
     def __init__(self, connection: Connection, dialect: str):
         self.dialect = dialect
         self.connection = connection

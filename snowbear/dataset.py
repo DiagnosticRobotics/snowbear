@@ -1,13 +1,9 @@
 from typing import Any, Union
 
-from pypika.dialects import (
-    SnowflakeCreateQueryBuilder,
-    SnowflakeDropQueryBuilder,
-    SnowflakeQuery,
-    SnowflakeQueryBuilder,
-    SQLLiteQuery,
-    SQLLiteQueryBuilder,
-)
+from pypika.dialects import (SnowflakeCreateQueryBuilder,
+                             SnowflakeDropQueryBuilder, SnowflakeQuery,
+                             SnowflakeQueryBuilder, SQLLiteQuery,
+                             SQLLiteQueryBuilder)
 from pypika.queries import QueryBuilder, Table
 from sqlalchemy.engine import Connection, Engine
 
