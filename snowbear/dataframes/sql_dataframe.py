@@ -173,7 +173,7 @@ class DataFrame:
         return DataFrame(transformation=transformation, session=self.session)
 
     def remove_duplicates(
-        self, keys: List[Field], orderby: Field, direction: Order = Order.asc
+        self, *keys: List[Field], orderby: Field, direction: Order = Order.asc
     ) -> DataFrame:
         """Removes duplicate rows from the current DataFrame
 
@@ -181,11 +181,11 @@ class DataFrame:
             >>> df.remove_duplicates([df.user_id], orderby=df.update_date, direction=Order.desc)
 
         Args:
-            keys (List[Field]): Keys to detect duplicates by
+            *keys (List[Field]): Keys to detect duplicates by
             orderby (Field): The field to order by
             direction (Order): The direction to order"""
         return self.qualify(
-            analytics.RowNumber().over(keys).orderby(orderby, order=direction) == 1
+            analytics.RowNumber().over(*keys).orderby(orderby, order=direction) == 1
         )
 
     def limit(self, limit: int) -> DataFrame:

@@ -66,6 +66,7 @@ class DataframeTransformation(SQLTransformation):
             aggs=self._aggs.copy(),
             deps=self._deps.copy(),
             limit=self._limit,
+            qualify=self._qualify
         )
 
     def get_groupby_term(self) -> List[str]:
