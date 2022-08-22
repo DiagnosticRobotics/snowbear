@@ -1,3 +1,4 @@
-from .sql import read_sql_query, to_sql, temporary_dataframe_table, temporary_ids_table
-from .dataset import SnowflakeDatasetQuery, SQLLiteDatasetQuery
 from .dataframes import Session
+from .dataset import SnowflakeDatasetQuery, SQLLiteDatasetQuery
+from .sql import (read_sql_query, temporary_dataframe_table,
+                  temporary_ids_table, to_sql)

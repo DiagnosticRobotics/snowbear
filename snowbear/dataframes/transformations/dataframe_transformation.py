@@ -1,24 +1,29 @@
+import typing
 from dataclasses import dataclass
 from textwrap import indent
 from typing import List, Tuple
 
-from snowbear.dataframes.terms import Term, Field
-from snowbear.dataframes.transformations.transformations import SQLTransformation, extend_transformations, TAB
+from snowbear.dataframes.enums import Order
+from snowbear.dataframes.terms import Field, Term
+from snowbear.dataframes.transformations.transformations import (
+    TAB, SQLTransformation, extend_transformations)
+
+if typing.TYPE_CHECKING:
+    from snowbear.dataframes import DataFrame
 
 
 @dataclass
 class JoinDefiniton:
-    source: "Dataframe"
+    source: "DataFrame"
     join_type: str
     join_terms: List[Term]
     join_terms_type: str
 
 
-NEWLINE = '\n'
+NEWLINE = "\n"
 
 
 class DataframeTransformation(SQLTransformation):
-
     def get_dependencies(self):
         dep_list = []
         dep_list.extend(extend_transformations(self._source))
@@ -26,10 +31,19 @@ class DataframeTransformation(SQLTransformation):
             dep_list.extend(extend_transformations(dep))
         return dep_list
 
-    def __init__(self, source, selectors=None, joins: List[JoinDefiniton] = None, filters=None,
-                 groupby: List[Field] = None,
-                 aggs: List[Term] = None,
-                 orderby: List[Tuple[Term, str]] = None, deps=None, limit: int = None) -> None:
+    def __init__(
+        self,
+        source,
+        selectors=None,
+        joins: List[JoinDefiniton] = None,
+        filters=None,
+        groupby: List[Field] = None,
+        aggs: List[Term] = None,
+        orderby: List[Tuple[Term, Order]] = None,
+        deps=None,
+        limit: int = None,
+        qualify=None,
+    ) -> None:
         self._source = source
 
         self._groupby = groupby if groupby else []
@@ -39,17 +53,35 @@ class DataframeTransformation(SQLTransformation):
         self._orderby = orderby if orderby else []
         self._joins = joins if joins else []
         self._deps = deps if deps else []
+        self._qualify = qualify
         self._limit = limit
 
     def copy(self):
-        return DataframeTransformation(self._source, selectors=self._selectors.copy(), joins=self._joins.copy(),
-                                       filters=self._filters.copy(),
-                                       groupby=self._groupby.copy(), aggs=self._aggs.copy(), deps=self._deps.copy(),
-                                       limit=self._limit)
+        return DataframeTransformation(
+            self._source,
+            selectors=self._selectors.copy(),
+            joins=self._joins.copy(),
+            filters=self._filters.copy(),
+            groupby=self._groupby.copy(),
+            aggs=self._aggs.copy(),
+            deps=self._deps.copy(),
+            limit=self._limit,
+        )
 
     def get_groupby_term(self) -> List[str]:
         if len(self._groupby) > 0:
-            return ',\n'.join([x.get_sql() for x in self._groupby])
+            return ",\n".join(
+                [
+                    x.get_sql(**self._source.session.get_kwargs_defaults())
+                    for x in self._groupby
+                ]
+            )
+        else:
+            return None
+
+    def get_qualify_term(self) -> List[str]:
+        if self._qualify:
+            return self._qualify.get_sql(**self._source.session.get_kwargs_defaults())
         else:
             return None
 
@@ -58,12 +90,18 @@ class DataframeTransformation(SQLTransformation):
 
     def create_join_term(self, join: JoinDefiniton) -> str:
         if join.join_terms_type == "ON":
-            terms = [x.get_sql() for x in join.join_terms]
-            on_term = 'AND\n'.join(terms)
+            terms = [
+                x.get_sql(**self._source.session.get_kwargs_defaults())
+                for x in join.join_terms
+            ]
+            on_term = "AND\n".join(terms)
             return f"{join.join_type} {join.source.get_alias_name} ON\n{indent(on_term, TAB)}"
         if join.join_terms_type == "USING":
-            terms = [x.get_sql() for x in join.join_terms]
-            using_term = ','.join(terms)
+            terms = [
+                x.get_sql(**self._source.session.get_kwargs_defaults())
+                for x in join.join_terms
+            ]
+            using_term = ",".join(terms)
             return f"{join.join_type} {join.source.get_alias_name} USING\n({indent(using_term, TAB)})"
 
         raise "join type must be ON or USING"
@@ -73,7 +111,8 @@ class DataframeTransformation(SQLTransformation):
 
         pass
 
-    def _disambiguate(self, left_join: List[Field], right_join: List[Field]):
+    @staticmethod
+    def _disambiguate(left_join: List[Field], right_join: List[Field]):
         result = left_join
         keys = [field.name for field in left_join]
         for i in right_join:
@@ -83,38 +122,62 @@ class DataframeTransformation(SQLTransformation):
         return result
 
     def _infer_selectors(self):
-        source_terms = [Field(col, table=self._source) for col in self._source.columns()]
+        source_terms = [
+            Field(col, table=self._source) for col in self._source.columns()
+        ]
         join_sources = [join_definition.source for join_definition in self._joins]
-        join_fields = [Field(col, table=join_source) for join_source in join_sources for col in join_source.columns()]
+        join_fields = [
+            Field(col, table=join_source)
+            for join_source in join_sources
+            for col in join_source.columns()
+        ]
 
         return self._disambiguate(source_terms, join_fields)
 
     def get_select_term(self) -> str:
         if self._groupby:
-            terms = [x.get_sql(with_alias=True) for x in self._groupby] + \
-                    [x.get_sql(with_alias=True) for x in self._aggs]
+            terms = [
+                x.get_sql(with_alias=True, **self._source.session.get_kwargs_defaults())
+                for x in self._groupby
+            ] + [
+                x.get_sql(with_alias=True, **self._source.session.get_kwargs_defaults())
+                for x in self._aggs
+            ]
         elif self._selectors:
-            terms = [x.get_sql(with_alias=True) for x in self._selectors]
+            terms = [
+                x.get_sql(with_alias=True, **self._source.session.get_kwargs_defaults())
+                for x in self._selectors
+            ]
         elif self._joins:
-            terms = [x.get_sql(with_alias=True) for x in self._infer_selectors()]
+            terms = [
+                x.get_sql(with_alias=True, **self._source.session.get_kwargs_defaults())
+                for x in self._infer_selectors()
+            ]
         else:
             terms = []
 
         if terms:
-            return ',\n'.join(terms)
+            return ",\n".join(terms)
         return "*"
 
     def get_where_term(self) -> str:
         if len(self._filters) > 0:
-            terms = [x.get_sql() for x in self._filters]
-            return '\nAND '.join(terms)
+            terms = [
+                x.get_sql(**self._source.session.get_kwargs_defaults())
+                for x in self._filters
+            ]
+            return "\nAND ".join(terms)
         else:
             return None
 
     def get_orderby_term(self) -> str:
         if len(self._orderby) > 0:
-            terms = [x[0].get_sql() + f" {x[1].upper()}" for x in self._orderby]
-            return '\n, '.join(terms)
+            terms = [
+                x[0].get_sql(**self._source.session.get_kwargs_defaults())
+                + f" {x[1].value}"
+                for x in self._orderby
+            ]
+            return "\n, ".join(terms)
         else:
             return None
 
@@ -122,19 +185,58 @@ class DataframeTransformation(SQLTransformation):
 
         select_section = f"SELECT\n{indent(self.get_select_term(), TAB)}"
         from_section = f"FROM {self._source.get_alias_name}"
-        join_section = f"{NEWLINE.join(self.get_join_terms())}" if len(self.get_join_terms()) > 0 else ""
-        where_section = f"WHERE\n{indent(self.get_where_term(), TAB)}" if self.get_where_term() else ""
-        group_section = f"GROUP BY\n{indent(self.get_groupby_term(), TAB)}" if self.get_groupby_term() else ""
-        order_section = f"ORDER BY\n{indent(self.get_orderby_term(), TAB)}" if self.get_orderby_term() else ""
+        join_section = (
+            f"{NEWLINE.join(self.get_join_terms())}"
+            if len(self.get_join_terms()) > 0
+            else ""
+        )
+        where_section = (
+            f"WHERE\n{indent(self.get_where_term(), TAB)}"
+            if self.get_where_term()
+            else ""
+        )
+        group_section = (
+            f"GROUP BY\n{indent(self.get_groupby_term(), TAB)}"
+            if self.get_groupby_term()
+            else ""
+        )
+        order_section = (
+            f"ORDER BY\n{indent(self.get_orderby_term(), TAB)}"
+            if self.get_orderby_term()
+            else ""
+        )
+        qualify_section = (
+            f"QUALIFY\n{indent(self.get_qualify_term(), TAB)}"
+            if self.get_qualify_term()
+            else ""
+        )
         limit_section = f"LIMIT {self._limit}" if self._limit is not None else ""
-        sql_segments = filter(lambda s: len(s) > 0,
-                              [select_section, from_section, join_section, where_section, group_section, order_section,
-                               limit_section])
-        return '\n'.join(sql_segments)
+        sql_segments = filter(
+            lambda s: len(s) > 0,
+            [
+                select_section,
+                from_section,
+                join_section,
+                where_section,
+                group_section,
+                order_section,
+                qualify_section,
+                limit_section,
+            ],
+        )
+        return "\n".join(sql_segments)
 
-    def add_join(self, other: "SQLDataframe", join_type: str, term_types: str, terms: List[Term]):
+    def add_join(
+        self, other: "DataFrame", join_type: str, term_types: str, terms: List[Term]
+    ):
         self._joins.append(
-            JoinDefiniton(source=other, join_type=join_type, join_terms_type=term_types, join_terms=terms))
+            JoinDefiniton(
+                source=other,
+                join_type=join_type,
+                join_terms_type=term_types,
+                join_terms=terms,
+            )
+        )
         self._deps.append(other)
 
     def add_groupby(self, by: List[Field], aggs: List[Term]):
@@ -147,8 +249,11 @@ class DataframeTransformation(SQLTransformation):
     def add_select(self, selectors: List[Term]):
         self._selectors.extend(selectors)
 
-    def add_orderby(self, orderby: List[Tuple[List[Term], str]]):
+    def add_orderby(self, orderby: List[Tuple[List[Term], Order]]):
         self._orderby.extend(orderby)
 
     def add_limit(self, limit: int):
         self._limit = limit
+
+    def add_qualify(self, qualify_term):
+        self._qualify = qualify_term
