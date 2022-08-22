@@ -3,6 +3,7 @@ from __future__ import annotations
 import random
 import string
 import typing
+import uuid
 from textwrap import indent
 from typing import Callable, Generator, List, Union
 
@@ -403,6 +404,14 @@ class DataFrame:
         dataset = Dataset(name=name, schema=schema, session=self.session)
         sql = self.to_sql()
         create_sql = f"CREATE TABLE {dataset.get_alias_name} AS  {sql} "
+        self.session.connection.execute(create_sql)
+        return dataset
+
+    def to_temp_table(self, schema: str = None) -> "Dataset":
+        temp_table_name = f"tmp_{uuid.uuid4().hex}".lower()
+        dataset = Dataset(name=temp_table_name, schema=schema, session=self.session)
+        sql = self.to_sql()
+        create_sql = f"CREATE TEMPORARY TABLE {dataset.get_alias_name} AS  {sql} "
         self.session.connection.execute(create_sql)
         return dataset
 
